@@ -1,10 +1,13 @@
 {
   "manifest_version": 3,
   "name": "Subs Manager",
-  "version": "1.0.0",
-  "description": "サブスクをローカルに保存して合計を可視化。CSVでエクスポート可能。",
+  "version": "1.1.0",
+  "description": "サブスクをローカルに保存して合計を可視化。CSVでエクスポート可能。複数PC間で同期対応。",
   "action": {
     "default_title": "Subs Manager",
     "default_popup": "popup.html"
-  }
+  },
+  "permissions": [
+    "storage"
+  ]
 }

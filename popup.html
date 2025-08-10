@@ -27,6 +27,12 @@
     .modal-content { background: white; margin: 50px auto; padding: 20px; width: 400px; border-radius: 8px; }
     .modal-content h2 { margin: 0 0 16px; font-size: 16px; }
     .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
+    .sync-settings { margin-top: 16px; padding: 12px; background: #f8f9fa; border-radius: 6px; }
+    .sync-settings h3 { margin: 0 0 8px; font-size: 14px; color: #495057; }
+    .sync-controls { display: flex; flex-direction: column; gap: 8px; }
+    .sync-toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
+    .sync-status { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: #6c757d; }
+    #sync-now { background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; }
   </style>
 </head>
 <body>
@@ -92,6 +98,20 @@
   <div class="actions">
     <button id="export-csv">CSV出力</button>
     <button id="clear-all" title="全件削除（元に戻せません）">全削除</button>
+  </div>
+
+  <div class="sync-settings">
+    <h3>同期設定</h3>
+    <div class="sync-controls">
+      <label class="sync-toggle">
+        <input type="checkbox" id="sync-enabled" />
+        <span>複数PC間でデータを同期する</span>
+      </label>
+      <div class="sync-status">
+        <span id="sync-status-text">同期無効</span>
+        <button id="sync-now">今すぐ同期</button>
+      </div>
+    </div>
   </div>
 
   <p class="small">
