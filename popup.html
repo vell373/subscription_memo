@@ -19,6 +19,14 @@
     .actions { display: flex; gap: 8px; margin-top: 8px; }
     .small { font-size: 12px; color: #666; }
     button { cursor: pointer; }
+    .controls { display: grid; grid-template-columns: 1fr 200px; gap: 8px; margin-bottom: 12px; }
+    .controls input, .controls select { padding: 6px; font-size: 13px; }
+    .edit-btn { background: #007bff; color: white; border: none; padding: 4px 8px; border-radius: 3px; font-size: 11px; }
+    .edit-btn:hover { background: #0056b3; }
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; }
+    .modal-content { background: white; margin: 50px auto; padding: 20px; width: 400px; border-radius: 8px; }
+    .modal-content h2 { margin: 0 0 16px; font-size: 16px; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 16px; justify-content: flex-end; }
   </style>
 </head>
 <body>
@@ -41,6 +49,20 @@
     </div>
     <button type="submit">追加</button>
   </form>
+
+  <div class="controls">
+    <input id="search" type="text" placeholder="サービス名で検索..." />
+    <select id="sort">
+      <option value="name-asc">名前順（昇順）</option>
+      <option value="name-desc">名前順（降順）</option>
+      <option value="monthly-amount-asc">月額金額順（昇順）</option>
+      <option value="monthly-amount-desc">月額金額順（降順）</option>
+      <option value="yearly-amount-asc">年額金額順（昇順）</option>
+      <option value="yearly-amount-desc">年額金額順（降順）</option>
+      <option value="period-monthly">月額のみ</option>
+      <option value="period-yearly">年額のみ</option>
+    </select>
+  </div>
 
   <table>
     <thead>
@@ -76,6 +98,33 @@
     ※ 月額合計：月額入力分＋年額入力分の月額換算<br/>
     ※ 年額合計：年額入力分＋月額入力分の年額換算
   </p>
+
+  <!-- 編集モーダル -->
+  <div id="edit-modal" class="modal" style="display: none;">
+    <div class="modal-content">
+      <h2>サブスクリプション編集</h2>
+      <form id="edit-form">
+        <div class="row">
+          <div>
+            <label>サービス名</label>
+            <input id="edit-name" type="text" required />
+          </div>
+          <div>
+            <label>金額</label>
+            <input id="edit-amount" type="number" step="0.01" min="0" required />
+          </div>
+        </div>
+        <div class="period">
+          <label><input id="edit-monthly" type="radio" name="edit-period" value="monthly" /> 月額</label>
+          <label><input id="edit-yearly" type="radio" name="edit-period" value="yearly" /> 年額</label>
+        </div>
+        <div class="modal-actions">
+          <button type="submit">更新</button>
+          <button type="button" id="cancel-edit">キャンセル</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script src="popup.js"></script>
 </body>

@@ -13,6 +13,17 @@ const sumMonthly = $('#sum-monthly');
 const sumYearly = $('#sum-yearly');
 const exportBtn = $('#export-csv');
 const clearBtn = $('#clear-all');
+const searchInput = $('#search');
+const sortSelect = $('#sort');
+const editModal = $('#edit-modal');
+const editForm = $('#edit-form');
+const editNameInput = $('#edit-name');
+const editAmountInput = $('#edit-amount');
+const editMonthlyRadio = $('#edit-monthly');
+const editYearlyRadio = $('#edit-yearly');
+const cancelEditBtn = $('#cancel-edit');
+
+let currentEditId = null;
 
 function load() {
   try {
@@ -46,6 +57,41 @@ function deleteSubscription(id) {
   render();
 }
 
+function editSubscription(id, name, amount, period) {
+  const subs = load();
+  const index = subs.findIndex(s => s.id === id);
+  if (index !== -1) {
+    subs[index] = { ...subs[index], name, amount, period };
+    save(subs);
+    render();
+  }
+}
+
+function openEditModal(id) {
+  const subs = load();
+  const sub = subs.find(s => s.id === id);
+  if (!sub) return;
+  
+  currentEditId = id;
+  editNameInput.value = sub.name;
+  editAmountInput.value = sub.amount;
+  
+  if (sub.period === 'monthly') {
+    editMonthlyRadio.checked = true;
+  } else {
+    editYearlyRadio.checked = true;
+  }
+  
+  editModal.style.display = 'block';
+  editNameInput.focus();
+}
+
+function closeEditModal() {
+  editModal.style.display = 'none';
+  currentEditId = null;
+  editForm.reset();
+}
+
 function formatJPY(n) {
   // 通貨記号なし（見た目をシンプルに）、必要なら Intl で記号付きに
   return new Intl.NumberFormat('ja-JP', { maximumFractionDigits: 2 }).format(n);
@@ -68,8 +114,66 @@ function calcSums(subs) {
   return { monthlyTotal, yearlyTotal };
 }
 
+function filterAndSortSubs(subs) {
+  const searchTerm = searchInput.value.toLowerCase().trim();
+  const sortValue = sortSelect.value;
+  
+  // 検索フィルター
+  let filtered = subs.filter(s => 
+    s.name.toLowerCase().includes(searchTerm)
+  );
+  
+  // 並び替え
+  switch (sortValue) {
+    case 'name-asc':
+      filtered.sort((a, b) => a.name.localeCompare(b.name));
+      break;
+    case 'name-desc':
+      filtered.sort((a, b) => b.name.localeCompare(a.name));
+      break;
+    case 'monthly-amount-asc':
+      filtered.sort((a, b) => {
+        const aMonthly = a.period === 'monthly' ? a.amount : a.amount / 12;
+        const bMonthly = b.period === 'monthly' ? b.amount : b.amount / 12;
+        return aMonthly - bMonthly;
+      });
+      break;
+    case 'monthly-amount-desc':
+      filtered.sort((a, b) => {
+        const aMonthly = a.period === 'monthly' ? a.amount : a.amount / 12;
+        const bMonthly = b.period === 'monthly' ? b.amount : b.amount / 12;
+        return bMonthly - aMonthly;
+      });
+      break;
+    case 'yearly-amount-asc':
+      filtered.sort((a, b) => {
+        const aYearly = a.period === 'yearly' ? a.amount : a.amount * 12;
+        const bYearly = b.period === 'yearly' ? b.amount : b.amount * 12;
+        return aYearly - bYearly;
+      });
+      break;
+    case 'yearly-amount-desc':
+      filtered.sort((a, b) => {
+        const aYearly = a.period === 'yearly' ? a.amount : a.amount * 12;
+        const bYearly = b.period === 'yearly' ? b.amount : b.amount * 12;
+        return bYearly - aYearly;
+      });
+      break;
+    case 'period-monthly':
+      filtered = filtered.filter(s => s.period === 'monthly');
+      break;
+    case 'period-yearly':
+      filtered = filtered.filter(s => s.period === 'yearly');
+      break;
+  }
+  
+  return filtered;
+}
+
 function render() {
-  const subs = load();
+  const allSubs = load();
+  const subs = filterAndSortSubs(allSubs);
+  
   listTbody.innerHTML = subs.map(s => {
     // 換算金額を計算
     const convertedAmount = s.period === 'monthly' 
@@ -86,12 +190,16 @@ function render() {
         <td>${formatJPY(s.amount)}円</td>
         <td>${s.period === 'monthly' ? '月額' : '年額'}</td>
         <td class="small">${convertedLabel}</td>
-        <td><button data-del="${s.id}">削除</button></td>
+        <td>
+          <button class="edit-btn" data-edit="${s.id}">編集</button>
+          <button data-del="${s.id}">削除</button>
+        </td>
       </tr>
     `;
   }).join('');
 
-  const { monthlyTotal, yearlyTotal } = calcSums(subs);
+  // 合計は全データで計算（フィルターされたデータではなく）
+  const { monthlyTotal, yearlyTotal } = calcSums(allSubs);
   sumMonthly.textContent = `${formatJPY(monthlyTotal)}円`;
   sumYearly.textContent = `${formatJPY(yearlyTotal)}円`;
 }
@@ -117,9 +225,17 @@ form.addEventListener('submit', (e) => {
 });
 
 listTbody.addEventListener('click', (e) => {
-  const btn = e.target.closest('button[data-del]');
-  if (!btn) return;
-  deleteSubscription(btn.dataset.del);
+  const delBtn = e.target.closest('button[data-del]');
+  if (delBtn) {
+    deleteSubscription(delBtn.dataset.del);
+    return;
+  }
+  
+  const editBtn = e.target.closest('button[data-edit]');
+  if (editBtn) {
+    openEditModal(editBtn.dataset.edit);
+    return;
+  }
 });
 
 exportBtn.addEventListener('click', () => {
@@ -146,6 +262,42 @@ clearBtn.addEventListener('click', () => {
   if (!confirm('全件を削除します。よろしいですか？')) return;
   save([]);
   render();
+});
+
+// 検索・並び替えのイベントリスナー
+searchInput.addEventListener('input', render);
+sortSelect.addEventListener('change', render);
+
+// 編集フォームのイベントリスナー
+editForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  if (!currentEditId) return;
+  
+  const name = editNameInput.value.trim();
+  const amount = parseFloat(editAmountInput.value);
+  const period = $$('input[name="edit-period"]').find(i => i.checked).value;
+  
+  if (!name || isNaN(amount) || amount < 0) return;
+  
+  editSubscription(currentEditId, name, amount, period);
+  closeEditModal();
+});
+
+// モーダルのイベントリスナー
+cancelEditBtn.addEventListener('click', closeEditModal);
+
+// モーダルの背景クリックで閉じる
+editModal.addEventListener('click', (e) => {
+  if (e.target === editModal) {
+    closeEditModal();
+  }
+});
+
+// ESCキーでモーダルを閉じる
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && editModal.style.display === 'block') {
+    closeEditModal();
+  }
 });
 
 document.addEventListener('DOMContentLoaded', render);
