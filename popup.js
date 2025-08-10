@@ -52,8 +52,17 @@ function addSubscription(name, amount, period) {
 }
 
 function deleteSubscription(id) {
-  const subs = load().filter(s => s.id !== id);
-  save(subs);
+  const subs = load();
+  const sub = subs.find(s => s.id === id);
+  
+  if (!sub) return;
+  
+  if (!confirm(`「${sub.name}」を削除しますか？\n\nこの操作は元に戻せません。`)) {
+    return;
+  }
+  
+  const filteredSubs = subs.filter(s => s.id !== id);
+  save(filteredSubs);
   render();
 }
 
